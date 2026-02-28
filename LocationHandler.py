@@ -2,7 +2,6 @@ from time import time as s_since_epoch
 import objc
 from Foundation import NSObject, NSLog, NSRunLoop, NSDate
 from CoreLocation import CLLocationManager, kCLLocationAccuracyBest
-# only works on macos
 
 
 class LocationDelegate(NSObject):

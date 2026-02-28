@@ -1,7 +1,20 @@
+import platform
 import httpx
+import sys
+
 from rich import print
 from rich.console import Console
 from LocationHandler import macOS_queryLocation
+
+
+def runtimeError(str):
+    raise RuntimeError(str)
+
+
+if platform.system() != "Darwin":
+    runtimeError(
+        "Error! This program is not cross-platform, and only works on macos. Implement your own LocationHandler if you care")
+
 
 console = Console()
 
@@ -12,13 +25,13 @@ def get_api_key():
         with open(API_KEY_DIR, 'r', encoding='ascii') as file:
             api_key = file.read().strip()
     except FileNotFoundError:
-        raise RuntimeError(
+        runtimeError(
             f"Error: You are missing the '{API_KEY_DIR}'"
             f". Check readme for instructions on how to get one."
         )
         return None
     except Exception as e:
-        raise RuntimeError(f"An unspecified error occurred: {e}")
+        runtimeError(f"An unspecified error occurred: {e}")
     return api_key
 
 
@@ -30,7 +43,7 @@ class GWeatherRequestPool:
 
     def __init__(self):
         if self.latitude is None or self.longitude is None:
-            raise RuntimeError("Unable to get location!")
+            runtimeError("Unable to get location!")
 
     def makeRequest(self, request: str):
         self.requests.append(request)
@@ -52,7 +65,7 @@ class GWeatherRequestPool:
                 try:
                     json_dict_partial: dict = response.json()
                 except ValueError:
-                    raise RuntimeError(
+                    runtimeError(
                         f"Expected JSON, got: {
                             response.headers.get('content-type')}"
                         f":\n{response.text[:500]}")
@@ -312,7 +325,21 @@ heatGradient = {
 }
 
 
+def showGradient():
+    print("Showing gradient:")
+    color = heatGradient.get(8)
+    print(f"[{color}] <8°C = {color}[/{color}]")
+
+    for i in range(8, 37):
+        color = heatGradient.get(i)
+        print(f"[{color}]{i:>3}°C = {color}[/{color}]")
+
+    color = heatGradient.get(36)
+    print(f"[{color}]>36°C = {color}[/{color}]")
+
 # expects heat in degrees celsius
+
+
 def fmt_heat(deg_c: float):
     if deg_c < HEAT_GRADIENT_MIN:
         color = heatGradient.get(HEAT_GRADIENT_MIN)
@@ -323,14 +350,32 @@ def fmt_heat(deg_c: float):
     return (f"[{color}]{deg_c}°C[/{color}]")
 
 
+usage_str = f"python {sys.argv[0]} [-g|--gradient] [-c|--coordinates]"
+
+
 def main():
+    PRINT_COORDINATES = False
+    if len(sys.argv) == 2:
+        if sys.argv[1] == "-g" or sys.argv[1] == "--gradient":
+            showGradient()
+            return
+        elif sys.argv[1] == "-c" or sys.argv[1] == "--coordinates":
+            PRINT_COORDINATES = True
+        else:
+            runtimeError(f"Unknown arguments passed.\nUsage:\t{usage_str}")
+    elif len(sys.argv) != 1:
+        runtimeError(f"Unknown arguments passed.\nUsage:\t{usage_str}")
+
     pool = GWeatherRequestPool()
     pool.makeRequest("currentConditions")
     pool.makeRequest("forecast/days")
 
     res = Result(pool)
-    print(f"It is {fmt_heat(res.temp_c)} right now."
+    print(f"It is {fmt_heat(res.temp_c)} right now. "
           f"The highest today should be {fmt_heat(res.max_c)}.")
+    if PRINT_COORDINATES:
+        print(
+            f"Coordinates: (lat={pool.latitude:.6},long={pool.longitude:.6})")
 
 
 if __name__ == "__main__":
