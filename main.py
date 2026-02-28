@@ -1,7 +1,6 @@
 import platform
 import httpx
 import sys
-
 from rich import print
 from rich.console import Console
 from LocationHandler import macOS_queryLocation
