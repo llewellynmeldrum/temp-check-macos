@@ -3,6 +3,9 @@ import objc
 from Foundation import NSObject, NSLog, NSRunLoop, NSDate
 from CoreLocation import CLLocationManager, kCLLocationAccuracyBest
 
+import platform
+if platform.system() != "Darwin":
+
 
 class LocationDelegate(NSObject):
     def init(self):
