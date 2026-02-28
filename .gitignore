@@ -1,0 +1,4 @@
+.*
+.API_KEY
+!.gitignore
+__pycache__/
